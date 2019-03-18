@@ -41,24 +41,43 @@ public class DefaultDialogTextFormatter implements DialogTextFormatter {
             List<DialogFormattedText> textListWithColor) {
         List<DialogFormattedText> processedColorMsgList = new ArrayList<>();
 
+        appendNewLine(processedColorMsgList);
+
+        int currentOffset = 0;
         for (DialogFormattedText textWithColor : textListWithColor) {
             String content = textWithColor.getContent();
             Color color = textWithColor.getColor();
+            int cnt = content.length();
 
-            int start = 0;
-            int end = start + wordsNumPerLine;
-            while (start < content.length()) {
-                if (content.length() < end) {
-                    end = content.length();
+            if (currentOffset + cnt > wordsNumPerLine) {
+                int start = 0;
+                int end = wordsNumPerLine - currentOffset;
+                currentOffset = 0;
+                while (start < content.length()) {
+                    if (content.length() < end) {
+                        end = content.length();
+                        currentOffset = end - start;
+                    }
+                    String lineText = content.substring(start, end);
+                    processedColorMsgList.add(new DialogFormattedText(lineText, color));
+                    if (currentOffset == 0) {
+                        appendNewLine(processedColorMsgList);
+                    }
+                    start = end;
+                    end = start + wordsNumPerLine;
                 }
-                String lineText = content.substring(start, end);
-                processedColorMsgList.add(new DialogFormattedText(lineText, color));
-                start = end;
-                end = start + wordsNumPerLine;
+
+            } else {
+                processedColorMsgList.add(new DialogFormattedText(content, color));
+                currentOffset += cnt;
             }
         }
 
         return processedColorMsgList;
+    }
+
+    private void appendNewLine(List<DialogFormattedText> processedColorMsgList) {
+//        processedColorMsgList.add(DialogFormattedText.NULL);
     }
 
     private List<DialogFormattedText> processColorTag(String msg) {

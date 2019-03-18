@@ -451,3 +451,110 @@ DefaultDialogTextFormatter类中result的类型要从
 ```
 
 这时，现有的三个测试方法都已正常运行。
+
+
+##### 第6步：真实的换行
+
+上步我们完成了彩色文本换行的处理，但是它们没有真的换行！
+
+理论上说，一行文本没有超过WORDS_NUM_PER_LINE，它们就应该在一行，而上一步我们的处理结果却是三条
+
+```java
+    String text = "一切，都将在<y>埋葬之地</y>重生。";
+    List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
+    assertNotNull(resultList);
+    assertThat(resultList.size(), is(3));
+```
+
+所以说，resultList的长度与换不换行没有关系。
+
+![](./image/coloredSingleLine.png)
+
+我们缺少文本坐标的概念。
+如上testFormatWithColorSingleLine()测试方法返回的值符合预期，但展示起来的话，它可能长这个样子，
+
+![](./image/wrongWrap.png)
+
+而非我们的真正意图：
+
+![](./image/coloredSingleLine.png)
+
+我们应该判断出什么时候该换行了。
+
+如下文本
+
+    "一切，都将在<y>埋葬之地</y>重生。"
+
+应该显示在一行内。而
+
+    有些人将在<y>埋葬之地</y>重生，而另外的一些人，将在埋葬之地被埋葬！
+
+这句文本，应该显示成如下才错正常
+
+![](./image/rightWrap.png)
+
+我们的逻辑如下：
+第一部分是“有些人将在”，5个字，默认颜色
+第二部分是“埋葬之地”，4个字，黄色
+第三部分是“重生，而另外的一些人，将在埋葬之地被埋葬！”，但实际上第一部分和第二部分已经占用了9个字了，因为WORDS_NUM_PER_LINE的缘故，第三部分只能是9个字，所以第三部分只能是“重生，而另外的一些”， 9个字，默认颜色
+第四部分是“人，将在埋葬之地被埋葬！”，9个字，默认颜色
+
+为了达到预期，我们编写了如下测试方法。
+
+```java
+    @Test
+    public void testFormatWithColorMulitLine() {
+        String text = "有些人将在<y>埋葬之地</y>重生，而另外的一些人，将在埋葬之地被埋葬！";
+        List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
+        assertNotNull(resultList);
+        assertThat(resultList.size(), is(4));
+        assertThat(resultList.get(0).getContent(), is("有些人将在"));
+        assertThat(resultList.get(0).getColor(), is(Color.BLACK));
+        assertThat(resultList.get(1).getContent(), is("埋葬之地"));
+        assertThat(resultList.get(1).getColor(), is(Color.YELLOW));
+        assertThat(resultList.get(2).getContent(), is("重生，而另外的一些"));
+        assertThat(resultList.get(2).getColor(), is(Color.BLACK));
+        assertThat(resultList.get(3).getContent(), is("人，将在埋葬之地被埋葬！"));
+        assertThat(resultList.get(3).getColor(), is(Color.BLACK));
+    }
+```
+ 
+最终的processColorText()方法如下：
+
+```java
+    private List<DialogFormattedText> processColorText(
+            List<DialogFormattedText> textListWithColor) {
+        List<DialogFormattedText> processedColorMsgList = new ArrayList<>();
+
+        int currentOffset = 0;
+        for (DialogFormattedText textWithColor : textListWithColor) {
+            String content = textWithColor.getContent();
+            Color color = textWithColor.getColor();
+            int cnt = content.length();
+
+            if (currentOffset + cnt > wordsNumPerLine) {
+                int start = 0;
+                int end = wordsNumPerLine - currentOffset;
+                currentOffset = 0;
+                while (start < content.length()) {
+                    if (content.length() < end) {
+                        end = content.length();
+                        currentOffset = end - start;
+                    }
+                    String lineText = content.substring(start, end);
+                    processedColorMsgList.add(new DialogFormattedText(lineText, color));
+                    start = end;
+                    end = start + wordsNumPerLine;
+                }
+
+            } else {
+                processedColorMsgList.add(new DialogFormattedText(content, color));
+                currentOffset += cnt;
+            }
+        }
+
+        return processedColorMsgList;
+    }
+```
+
+执行所有测试方法，通过。
