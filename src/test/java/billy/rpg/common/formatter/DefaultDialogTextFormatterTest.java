@@ -1,5 +1,6 @@
 package billy.rpg.common.formatter;
 
+import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -10,6 +11,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DefaultDialogTextFormatterTest {
+    private final Logger logger = Logger.getLogger(getClass());
 
     private DialogTextFormatter dialogTextFormatter;
 
@@ -25,6 +27,14 @@ public class DefaultDialogTextFormatterTest {
         assertNotNull(resultList);
         assertThat(resultList.size(), is(1));
         assertThat(resultList.get(0), is(text));
+
+        debug(resultList);
+    }
+
+    private void debug(List<String> resultList) {
+        for (String dialogFormattedText : resultList) {
+            logger.debug(dialogFormattedText);
+        }
     }
 
 }
