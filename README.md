@@ -407,3 +407,47 @@ DefaultDialogTextFormatter类中result的类型要从
 执行新写的测试方法testFormatWithColorSingleLine()，正常。但是testFormatWithMultiLine()方法则断言失败了。
 下一步我们就修复这个问题。
 
+##### 第五步：处理过后的彩色文本过长
+
+上步我们完成了单行彩色文本，但是遗留了一下问题，就是处理过颜色标签的一行文本超过了WORDS_NUM_PER_LINE。
+
+修改后format()方法如下：
+
+```java
+    public List<DialogFormattedText> format(String text) {
+        List<DialogFormattedText> textListWithColor = processColorTag(text);
+
+        List<DialogFormattedText> formattedTextListWithColor = processColorText(textListWithColor);
+
+        return formattedTextListWithColor;
+```
+
+其中processColorText()方法如下：
+
+```java
+    private List<DialogFormattedText> processColorText(
+            List<DialogFormattedText> textListWithColor) {
+        List<DialogFormattedText> processedColorMsgList = new ArrayList<>();
+
+        for (DialogFormattedText textWithColor : textListWithColor) {
+            String content = textWithColor.getContent();
+            Color color = textWithColor.getColor();
+
+            int start = 0;
+            int end = start + wordsNumPerLine;
+            while (start < content.length()) {
+                if (content.length() < end) {
+                    end = content.length();
+                }
+                String lineText = content.substring(start, end);
+                processedColorMsgList.add(new DialogFormattedText(lineText, color));
+                start = end;
+                end = start + wordsNumPerLine;
+            }
+        }
+
+        return processedColorMsgList;
+    }
+```
+
+这时，现有的三个测试方法都已正常运行。

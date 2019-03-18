@@ -15,7 +15,10 @@ public class DefaultDialogTextFormatter implements DialogTextFormatter {
     @Override
     public List<DialogFormattedText> format(String text) {
         List<DialogFormattedText> textListWithColor = processColorTag(text);
-        return textListWithColor;
+
+        List<DialogFormattedText> formattedTextListWithColor = processColorText(textListWithColor);
+
+        return formattedTextListWithColor;
         /*
         List<DialogFormattedText> result = new ArrayList<>();
 
@@ -31,6 +34,31 @@ public class DefaultDialogTextFormatter implements DialogTextFormatter {
             end = start + wordsNumPerLine;
         }
         return result;*/
+    }
+
+
+    private List<DialogFormattedText> processColorText(
+            List<DialogFormattedText> textListWithColor) {
+        List<DialogFormattedText> processedColorMsgList = new ArrayList<>();
+
+        for (DialogFormattedText textWithColor : textListWithColor) {
+            String content = textWithColor.getContent();
+            Color color = textWithColor.getColor();
+
+            int start = 0;
+            int end = start + wordsNumPerLine;
+            while (start < content.length()) {
+                if (content.length() < end) {
+                    end = content.length();
+                }
+                String lineText = content.substring(start, end);
+                processedColorMsgList.add(new DialogFormattedText(lineText, color));
+                start = end;
+                end = start + wordsNumPerLine;
+            }
+        }
+
+        return processedColorMsgList;
     }
 
     private List<DialogFormattedText> processColorTag(String msg) {
