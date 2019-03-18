@@ -19,21 +19,6 @@ public class DefaultDialogTextFormatter implements DialogTextFormatter {
         List<DialogFormattedText> formattedTextListWithColor = processColorText(textListWithColor);
 
         return formattedTextListWithColor;
-        /*
-        List<DialogFormattedText> result = new ArrayList<>();
-
-        int start = 0;
-        int end = wordsNumPerLine;
-        while (start < text.length()) {
-            if (text.length() < end) {
-                end = text.length();
-            }
-            String lineText = text.substring(start, end);
-            result.add(new DialogFormattedText(lineText, Color.BLACK));
-            start = end;
-            end = start + wordsNumPerLine;
-        }
-        return result;*/
     }
 
 
@@ -77,7 +62,7 @@ public class DefaultDialogTextFormatter implements DialogTextFormatter {
     }
 
     private void appendNewLine(List<DialogFormattedText> processedColorMsgList) {
-//        processedColorMsgList.add(DialogFormattedText.NULL);
+        processedColorMsgList.add(DialogFormattedText.NEW_LINE);
     }
 
     private List<DialogFormattedText> processColorTag(String msg) {

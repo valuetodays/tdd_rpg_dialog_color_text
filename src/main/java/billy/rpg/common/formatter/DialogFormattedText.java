@@ -4,7 +4,7 @@ import java.awt.*;
 
 public class DialogFormattedText {
 
-    public static final DialogFormattedText NULL = new DialogFormattedText(null, Color.WHITE);
+    public static final DialogFormattedText NEW_LINE = new DialogFormattedText(null, Color.WHITE);
 
     private final String content;
     private final Color color;

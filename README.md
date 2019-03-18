@@ -503,7 +503,7 @@ DefaultDialogTextFormatter类中result的类型要从
 
 ```java
     @Test
-    public void testFormatWithColorMulitLine() {
+    public void testFormatWithColorMultiLine() {
         String text = "有些人将在<y>埋葬之地</y>重生，而另外的一些人，将在埋葬之地被埋葬！";
         List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
         assertNotNull(resultList);
@@ -558,3 +558,149 @@ DefaultDialogTextFormatter类中result的类型要从
 ```
 
 执行所有测试方法，通过。
+
+##### 第7步：再谈换行
+
+上步完成的需求可以说都解决了。但，还是感觉有点奇怪，尤其是换行这一块，再看一下上步的结果图
+
+![](./image/rightWrap.png)
+
+如果我们能在“有些人在”和“人，将在埋葬之地被埋葬！”这两行前面添加一个空行来表示这里要换行了，岂不更妙？
+
+我们先在DialogFormattedText类中添加一个静态常量
+ 
+    public static final DialogFormattedText NEW_LINE = new DialogFormattedText(null, Color.WHITE);
+
+用以标识换行。
+
+相应地，测试方法testFormatWithColorMultiLine()变动为：
+
+```java
+    @Test
+    public void testFormatWithColorMultiLine() {
+        String text = "有些人将在<y>埋葬之地</y>重生，而另外的一些人，将在埋葬之地被埋葬！";
+        List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
+        assertNotNull(resultList);
+        assertThat(resultList.size(), is(6));
+        assertThat(resultList.get(0).getContent(), nullValue());
+        assertThat(resultList.get(1).getContent(), is("有些人将在"));
+        assertThat(resultList.get(1).getColor(), is(Color.BLACK));
+        assertThat(resultList.get(2).getContent(), is("埋葬之地"));
+        assertThat(resultList.get(2).getColor(), is(Color.YELLOW));
+        assertThat(resultList.get(3).getContent(), is("重生，而另外的一些"));
+        assertThat(resultList.get(3).getColor(), is(Color.BLACK));
+        assertThat(resultList.get(4).getContent(), nullValue());
+        assertThat(resultList.get(5).getContent(), is("人，将在埋葬之地被埋葬！"));
+        assertThat(resultList.get(5).getColor(), is(Color.BLACK));
+    }
+```
+
+依旧执行该测试方法，红条。接下来修改实现方法：
+
+```java
+    private List<DialogFormattedText> processColorText(
+            List<DialogFormattedText> textListWithColor) {
+        List<DialogFormattedText> processedColorMsgList = new ArrayList<>();
+
+        appendNewLine(processedColorMsgList);
+
+        int currentOffset = 0;
+        for (DialogFormattedText textWithColor : textListWithColor) {
+            String content = textWithColor.getContent();
+            Color color = textWithColor.getColor();
+            int cnt = content.length();
+
+            if (currentOffset + cnt > wordsNumPerLine) {
+                int start = 0;
+                int end = wordsNumPerLine - currentOffset;
+                currentOffset = 0;
+                while (start < content.length()) {
+                    if (content.length() < end) {
+                        end = content.length();
+                        currentOffset = end - start;
+                    }
+                    String lineText = content.substring(start, end);
+                    processedColorMsgList.add(new DialogFormattedText(lineText, color));
+                    if (currentOffset == 0) {
+                        appendNewLine(processedColorMsgList);
+                    }
+                    start = end;
+                    end = start + wordsNumPerLine;
+                }
+
+            } else {
+                processedColorMsgList.add(new DialogFormattedText(content, color));
+                currentOffset += cnt;
+            }
+        }
+
+        return processedColorMsgList;
+    }
+```
+
+appendNewLine()方法如下：
+
+```java
+    private void appendNewLine(List<DialogFormattedText> processedColorMsgList) {
+        processedColorMsgList.add(DialogFormattedText.NEW_LINE);
+    }
+```
+
+同样其它测试方法也需要相应的变动：
+
+testFormatWithSingleLine()方法
+
+```java
+    @Test
+    public void testFormatWithSingleLine() {
+        String text = "一切，都将在埋葬之地重生。";
+        List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
+        assertNotNull(resultList);
+        assertThat(resultList.size(), is(2));
+        assertThat(resultList.get(0).getContent(), nullValue());
+        assertThat(resultList.get(1).getContent(), is(text));
+
+        debug(resultList);
+    }
+```
+
+testFormatWithMultiLine()方法
+
+```java
+    @Test
+    public void testFormatWithMultiLine() {
+        String text = "有些人将在埋葬之地重生，而另外的一些人，将在埋葬之地被埋葬！";
+        List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
+        assertNotNull(resultList);
+        assertThat(resultList.size(), is(4));
+        assertThat(resultList.get(0).getContent(), nullValue());
+        assertThat(resultList.get(1).getContent(), is(text.substring(0, WORDS_NUM_PER_LINE)));
+        assertThat(resultList.get(2).getContent(), nullValue());
+        assertThat(resultList.get(3).getContent(), is(text.substring(WORDS_NUM_PER_LINE)));
+
+        debug(resultList);
+    }
+```
+
+testFormatWithColorSingleLine()方法
+
+```java
+    @Test
+    public void testFormatWithColorSingleLine() {
+        String text = "一切，都将在<y>埋葬之地</y>重生。";
+        List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
+        assertNotNull(resultList);
+        assertThat(resultList.size(), is(4));
+        assertThat(resultList.get(0).getContent(), nullValue());
+        assertThat(resultList.get(1).getContent(), is("一切，都将在"));
+        assertThat(resultList.get(1).getColor(), is(Color.BLACK));
+        assertThat(resultList.get(2).getContent(), is("埋葬之地"));
+        assertThat(resultList.get(2).getColor(), is(Color.YELLOW));
+        assertThat(resultList.get(3).getContent(), is("重生。"));
+        assertThat(resultList.get(3).getColor(), is(Color.BLACK));
+
+        debug(resultList);
+    }
+```
+
+再次执行所有测试方法，完全通过！
