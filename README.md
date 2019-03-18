@@ -1,5 +1,32 @@
-#### rpg-common
+#### tdd_rpg_dialog_color_text
 
-##### jacoco
+它是一个简单项目，用以展示使用tdd（test driven development）方式完成一个需求的过程。
 
-run `gradle clean test jacocoTestReport` and go to build/reports/jacoco/test/html for result
+##### 工具
+
+- gradle
+- junit4
+- jacoco 
+
+##### 缘由
+
+为什么会有本项目？因为我之前用java写过一个rpg，见xxx。里面就有显示彩色对话文本的功能，这个功能比较独立，这几天又看到了tdd，又想使用一下gradle，所以该项目就出现了。
+
+##### 准备
+
+雨血是我非常喜欢的一部武侠rpg。下面我将会以它其中的两个对话截图来完成我们的项目。
+
+![](./image/rain_blood/d1.jpg)
+
+![](./image/rain_blood/d2.jpg)
+
+PS：对话内容是：
+
+    一切，都将在埋葬之地重生。
+
+    有些人将在埋葬之地重生，而另外的一些人，将在埋葬之地被埋葬！
+
+从截图上可以看到，一行显示18个汉字。
+
+下面我们就开始一步一步地把对话文本分割成一行行彩色对话。
+
