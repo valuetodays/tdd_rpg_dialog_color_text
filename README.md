@@ -139,6 +139,10 @@ public class DefaultDialogTextFormatterTest {
 
 上步我们展示了一个简单的文本，这步我们要往目标迈近一步——展示换行的文本。
 
+目标效果图如下：
+
+![](./image/multiLine.png)
+
 想要展示换行文本，我们需要定一个变量，每行显示文字数量，即wordsNumPerLine，它是DefaultDialogTextFormatter的一个属性，
 该值应该由外部传入，所以为DefaultDialogTextFormatter添加构造方法并传入此值。
 
@@ -161,8 +165,6 @@ public class DefaultDialogTextFormatterTest {
         assertThat(resultList.size(), is(2));
         assertThat(resultList.get(0), is(text.substring(0, WORDS_NUM_PER_LINE)));
         assertThat(resultList.get(1), is(text.substring(WORDS_NUM_PER_LINE)));
-
-        debug(resultList);
     }
 ```
 
@@ -187,7 +189,7 @@ public class DefaultDialogTextFormatterTest {
 
 代码编译正常后，我们执行新写的测试方法testFormatWithMultiLine()。
 又是红条。
-我们就修改实现方法。
+我们就修改实现方法，实现方法不只一种，我的策略是从第一个字符开始，每次取wordsNumPerLine字，不足字数就说明到了文本的末尾了。
 
 修改后的format()如下：
 
@@ -210,3 +212,198 @@ public class DefaultDialogTextFormatterTest {
         return result;
     }
 ```
+
+##### 第四步：显示简单对话文本（含颜色）
+
+上步我们实现了文本的换行，这次我们要在单行文本的基础上，添加颜色功能。
+
+目标效果如下：
+
+![](./image/coloredSingleLine.png)
+
+这次我们发现format()方法的返回值是List<String>，不足以存放颜色字段。我们需要添加一个类DialogFormattedText作为返回的对象。
+
+```java
+package billy.rpg.common.formatter;
+
+import java.awt.*;
+
+public class DialogFormattedText {
+
+    private final String content;
+    private final Color color;
+
+    public DialogFormattedText(String content, Color color) {
+        this.content = content;
+        this.color = color;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public Color getColor() {
+        return color;
+    }
+
+    @Override
+    public String toString() {
+        return content + "@(" + color.getRed() + "," + color.getGreen() + "," + color.getBlue() + ")";
+    }
+
+}
+
+```
+
+注意要将DialogTextFormatter的format()方法要由原来的
+
+    List<String> format(String text);
+
+改为
+
+    List<DialogFormattedText> format(String text);
+
+这时会有编译错误，我们要改动的内容还真不少。
+
+DefaultDialogTextFormatter类中result的类型要从
+
+    List<String> result = new ArrayList<>();
+
+改为
+
+    List<DialogFormattedText> result = new ArrayList<>();
+
+对result添加数据的操作也要从
+
+    result.add(new DialogFormattedText(lineText, Color.BLACK));
+
+改为
+
+    result.add(new DialogFormattedText(lineText, Color.BLACK));
+
+之前的两个测试类也相应在修改为
+
+```java
+    @Test
+    public void testFormatWithSingleLine() {
+        String text = "一切，都将在埋葬之地重生。";
+        List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
+        assertNotNull(resultList);
+        assertThat(resultList.size(), is(1));
+        assertThat(resultList.get(0).getContent(), is(text));
+    }
+```
+
+和
+
+```java
+    @Test
+    public void testFormatWithMultiLine() {
+        String text = "有些人将在埋葬之地重生，而另外的一些人，将在埋葬之地被埋葬！";
+        List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
+        assertNotNull(resultList);
+        assertThat(resultList.size(), is(2));
+        assertThat(resultList.get(0).getContent(), is(text.substring(0, WORDS_NUM_PER_LINE)));
+        assertThat(resultList.get(1).getContent(), is(text.substring(WORDS_NUM_PER_LINE)));
+    }
+```
+
+同时，用于简单显示的debug()方法也应该有相应的变动。
+
+```java
+    private void debug(List<DialogFormattedText> resultList) {
+        for (DialogFormattedText dialogFormattedText : resultList) {
+            logger.debug(dialogFormattedText);
+        }
+    }
+```
+
+下面该说文本中含有颜色的事了，我们使用标签如<r></r>来表示红色，<g></g>来表示绿色，<y></y>表示黄色，<b></b>表示蓝色。
+
+再贴下本步的目标图
+
+![](./image/coloredSingleLine.png)
+
+这样，我们的文本应该是`一切，都将在<y>埋葬之地</y>重生。`
+
+测试方法如下：
+
+```java
+    @Test
+    public void testFormatWithColorSingleLine() {
+        String text = "一切，都将在<y>埋葬之地</y>重生。";
+        List<DialogFormattedText> resultList = dialogTextFormatter.format(text);
+        assertNotNull(resultList);
+        assertThat(resultList.size(), is(3));
+        assertThat(resultList.get(0).getContent(), is("一切，都将在"));
+        assertThat(resultList.get(0).getColor(), is(Color.BLACK));
+        assertThat(resultList.get(1).getContent(), is("埋葬之地"));
+        assertThat(resultList.get(1).getColor(), is(Color.YELLOW));
+        assertThat(resultList.get(2).getContent(), is("重生。"));
+        assertThat(resultList.get(2).getColor(), is(Color.BLACK));
+    }
+```
+
+执行测试类，失败，下面开始编写实现方法。format()方法如下：
+
+```java
+    public List<DialogFormattedText> format(String text) {
+        List<DialogFormattedText> textListWithColor = processColorTag(text);
+        return textListWithColor;
+    }
+```
+
+添加processColorTag()方法如下：
+
+```java
+    private List<DialogFormattedText> processColorTag(String msg) {
+        List<DialogFormattedText> msgListTemp = new ArrayList<>();
+
+        String msgTemp = msg;
+        while (true) {
+            int colorTagPos = msgTemp.indexOf('<');
+            if (colorTagPos == -1) {
+                break;
+            }
+            String tagBegin = msgTemp.substring(colorTagPos, colorTagPos + "<c>".length());
+            int indexOf = msgTemp.indexOf(tagBegin);
+            String bef = msgTemp.substring(0, indexOf);
+            msgListTemp.add(new DialogFormattedText(bef, Color.BLACK));
+            String tagEnd = tagBegin.substring(0, 1) + "/" + tagBegin.substring(1);
+            int indexOf2 = msgTemp.indexOf(tagEnd, indexOf);
+            if (indexOf2 < 0) {
+                throw new RuntimeException("unclose tag found!");
+            }
+            String coloredMsg = msgTemp.substring(indexOf + tagBegin.length(), indexOf2);
+            Color color = getColor(tagBegin);
+            msgListTemp.add(new DialogFormattedText(coloredMsg, color));
+            msgTemp = msgTemp.substring(indexOf2 + tagEnd.length());
+        }
+
+        msgListTemp.add(new DialogFormattedText(msgTemp, Color.BLACK));
+
+        return msgListTemp;
+    }
+
+    private Color getColor(String tagName) {
+        char flagName = tagName.toLowerCase().charAt(1);
+        if ('r' == flagName) {
+            return Color.red;
+        }
+        if ('b' == flagName) {
+            return Color.blue;
+        }
+        if ('g' == flagName) {
+            return Color.green;
+        }
+        if ('y' == flagName) {
+            return Color.yellow;
+        }
+
+        return Color.BLACK;
+    }
+```
+
+执行新写的测试方法testFormatWithColorSingleLine()，正常。但是testFormatWithMultiLine()方法则断言失败了。
+下一步我们就修复这个问题。
+
