@@ -10,22 +10,22 @@
 
 ##### 缘由
 
-为什么会有本项目？因为我之前用java写过一个rpg，见xxx。里面就有显示彩色对话文本的功能，这个功能比较独立，这几天又看到了tdd，又想使用一下gradle，所以该项目就出现了。
+为什么会有本项目？因为我之前用java写过一个rpg，见[https://gitee.com/valuetodays/rpg-one](https://gitee.com/valuetodays/rpg-one)。里面就有显示彩色对话文本的功能，这个功能比较独立，这几天又看到了tdd，又想使用一下gradle，所以该项目就出现了。
 
 #### 目标
 
 对代码编程者：通过使用tdd，来快乐地编程。
-对代码阅读者：不借助最终的源码库，一步步手工编写或复制来完成本项目。
+对代码阅读者：不借助最终的源码库，一步步手工编写或复制代码来完成本项目。
 
 ##### 准备
 
-雨血是我非常喜欢的一部武侠rpg。下面我将会以它其中的两个对话截图来完成我们的项目。
+雨血是我非常喜欢的一部武侠rpg。下面我将会以它其中的两句台词截图来完成我们的项目。
 
 ![](./image/rain_blood/d1.jpg)
 
 ![](./image/rain_blood/d2.jpg)
 
-PS：对话内容是：
+PS：台词内容（二者并不是对话关系）是：
 
     一切，都将在埋葬之地重生。
 
@@ -704,3 +704,51 @@ testFormatWithColorSingleLine()方法
 ```
 
 再次执行所有测试方法，完全通过！
+
+##### 第8步：测试覆盖率
+
+上步我们完全实现了需求，测试也完全通过。下面我们关注一下测试覆盖率。
+
+再重复一下，执行`gradle clean test jacocoTestReport`然后去build/reports/jacoco/test/html下访问index.html
+
+发现覆盖率还差一点，分别是getColor()和processColorTag()。前者是我们只使用了一个颜色，后一个是我们没有考虑到异常情况
+
+先在DefaultDialogTextFormatterTest类中添加公有属性
+
+```java
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+```
+
+再添加一个未关闭的测试方法
+
+```java
+    @Test
+    public void testFormat_shouldThrowExceptionWhenUncloseColorTag() {
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage("unclose tag found!");
+        String dialogText = "一切，都将在<y>埋葬之地重生。";
+        dialogTextFormatter.format(dialogText);
+    }
+```
+再添加一个当“<”标志后无足够字符的异常的测试类
+
+```java
+    @Test
+    public void testFormat_shouldThrowExceptionWhenErrorColorTagWith() {
+        expectedException.expect(StringIndexOutOfBoundsException.class);
+        String dialogText = "一切，都将在埋葬之地重生。<";
+        dialogTextFormatter.format(dialogText);
+    }
+```
+
+至此测试方法算是完成了。
+
+其实，format()方法还应该返回一个标识对话文本行数的值，此处就不再说明了。
+
+当然了，本程序忽略了很多的异常检查，就不再一一指出。
+其实还有添加gui显示彩色文本的想法，但就不在此处添加该功能了。以后有补充，会添加到[https://gitee.com/valuetodays/rpg-one](https://gitee.com/valuetodays/rpg-one)里。
+
+本程序因tdd而来，该程序我已在[https://gitee.com/valuetodays/rpg-one](https://gitee.com/valuetodays/rpg-one)实现过，但本身还有些bug，目前在补充这个项目的测试类。
+
+2019-03-18
