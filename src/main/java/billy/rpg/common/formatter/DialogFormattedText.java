@@ -22,6 +22,10 @@ public class DialogFormattedText {
         return color;
     }
 
+    public boolean isNewLine() {
+        return this.content == null;
+    }
+
     @Override
     public String toString() {
         return content + "@(" + color.getRed() + "," + color.getGreen() + "," + color.getBlue() + ")";

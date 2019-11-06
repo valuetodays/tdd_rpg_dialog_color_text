@@ -749,6 +749,10 @@ testFormatWithColorSingleLine()方法
 当然了，本程序忽略了很多的异常检查，就不再一一指出。
 其实还有添加gui显示彩色文本的想法，但就不在此处添加该功能了。以后有补充，会添加到[https://gitee.com/valuetodays/rpg-one](https://gitee.com/valuetodays/rpg-one)里。
 
+【在2019-11-06这天把gui显示彩色文件实现了，见TestPanel.java，示例显示了三组格式化】，附上截图：
+
+![](./image/gui-display.png)
+
 本程序因tdd而来，该程序我已在[https://gitee.com/valuetodays/rpg-one](https://gitee.com/valuetodays/rpg-one)实现过，但本身还有些bug，目前在补充这个项目的测试类。
 
 2019-03-18
